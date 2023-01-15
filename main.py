@@ -28,7 +28,8 @@ def checkIfParentReallyIsModOfTHATSub(commentObj, theParentAuthorObj):
 
 def checkTheComment(commentObj, adj: str, positiveVote: bool):
     commentBody = commentObj.body
-    if commentBody.lower().strip(" .!,") == f'{adj} mod':
+    commentBodyTBCompared = commentBody.lower().strip(" .!,")
+    if commentBodyTBCompared == f'{adj} mod' or commentBodyTBCompared == f'the {adj} mod':
         myLogger.info(f"https://reddit.com/{commentObj.link_id[3:]}")
         myLogger.info(f"{commentBody} - {commentObj.author}")
         theParentCommentObj = commentObj.parent()
@@ -64,9 +65,9 @@ reddit = praw.Reddit(client_id=rdtClntIDs[0],client_secret=rdtClntSecs[0],user_a
 myLogger.info("Script started.")
 
 for commentObj in reddit.subreddit('all').stream.comments(skip_existing=True):
-    goodAdjectives = ['good', 'great', 'greatest', 'the greatest', 'best', 'the best', 'awesome', 'amazing', 'nice', 'excellent']
-    basAdjectives = ['bad', 'worst']
+    goodAdjectives = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb']
+    badAdjectives = ['bad', 'worst']
     for adj in goodAdjectives:
         checkTheComment(commentObj, adj, True)
-    for adj in basAdjectives:
+    for adj in badAdjectives:
         checkTheComment(commentObj, adj, False)
