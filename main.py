@@ -1,4 +1,4 @@
-import logging, sys, os
+import logging, sys, os, requests
 
 import praw
 
@@ -7,15 +7,18 @@ from myCreds import *
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+def sendTgMessage(message):
+    url = f'https://api.telegram.org/bot{tgBotToken}/sendMessage' # ripl shipping spam bot this is 
+    payload = {'chat_id':myTgID, 'text': f"""{message}"""}
+    requests.post(url,json=payload)
+
 def checkIfParentReallyIsModOfTHATSub(commentObj, theParentAuthorObj):
     """
-    Returns "automoderator" string if parent was that.
-    Else, returns str of subs modded by parent, delimiter is space
-    If parent wasn't the mod of the sub in which comment was made, returns False
+    Returns str of subs modded by parent, if indeed parent was mod of that sub.
+    Else, returns False. Also returns False if parent was AutoMod
     """
-
     if theParentAuthorObj.name == "AutoModerator":
-        return 'AutoModerator'
+        return False
     subWhereCommentWasMade = commentObj.subreddit
     subsModdedByParent = theParentAuthorObj.moderated()
     if subWhereCommentWasMade in subsModdedByParent:
@@ -31,17 +34,16 @@ def checkTheComment(commentObj, adj: str, positiveVote: bool):
         theParentCommentObj = commentObj.parent()
         theParentAuthorObj = theParentCommentObj.author
         myLogger.info(f"The parent is {theParentCommentObj.author}")
-        try:
-            hi = True
-            # commentObj.reply(f"Thank you for voting on {theParentCommentObj.author}")
-        except praw.exceptions.RedditAPIException:
-            myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway recording vote & carring on...")
         subsModdedByParent = checkIfParentReallyIsModOfTHATSub(commentObj, theParentAuthorObj)
         if subsModdedByParent:
-            if subsModdedByParent == 'AutoModerator':
-                subsModdedByParent = 'all'
             myLogger.info("recording db")
             recordVoteInDB(theParentAuthorObj.name, positiveVote, subsModdedByParent)
+            try:
+                commentObj.reply(f"Thanks for voting on {theParentAuthorObj.name}.\n\n*On a quest to find the best mods on Reddit.*")
+                sendTgMessage("Mod Rank Bot commented, check it out.")
+                myLogger.info("Commented succyly")
+            except praw.exceptions.RedditAPIException:
+                myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway recording vote & carring on...")
         else:
             myLogger.warning(f"False comment. Parent wasn't a mod of sub where comment was made.")
 
@@ -62,7 +64,7 @@ reddit = praw.Reddit(client_id=rdtClntIDs[0],client_secret=rdtClntSecs[0],user_a
 myLogger.info("Script started.")
 
 for commentObj in reddit.subreddit('all').stream.comments(skip_existing=True):
-    goodAdjectives = ['good', 'great', 'greatest', 'the greatest', 'best', 'the best', 'awesome', 'amazing', 'nice']
+    goodAdjectives = ['good', 'great', 'greatest', 'the greatest', 'best', 'the best', 'awesome', 'amazing', 'nice', 'excellent']
     basAdjectives = ['bad', 'worst']
     for adj in goodAdjectives:
         checkTheComment(commentObj, adj, True)
