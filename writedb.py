@@ -20,3 +20,7 @@ def recordVoteInDB(modName: str, positiveVote: bool, subreddits: str):
     con.commit()
     # print(cursor.execute("SELECT * FROM mods").fetchall())
     con.close()
+
+# useful sqlite CLI commands
+# .open modrank.db (to connect to file, NO SEMICOLON AT END)
+# .schema mods (to show table desciption)
