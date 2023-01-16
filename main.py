@@ -1,4 +1,4 @@
-import logging, sys, os, requests
+import logging, sys, os, requests, pyperclip, json, time
 
 import praw
 
@@ -26,12 +26,11 @@ def checkIfParentReallyIsModOfTHATSub(commentObj, theParentAuthorObj):
         return ' '.join(subsModdedByParent)
     return False
 
-def checkTheComment(commentObj, adj: str, positiveVote: bool):
-    commentBody = commentObj.body
-    commentBodyTBCompared = commentBody.lower().strip(" .!,")
-    if commentBodyTBCompared == f'{adj} mod' or commentBodyTBCompared == f'the {adj} mod':
-        myLogger.info(f"https://reddit.com/{commentObj.link_id[3:]}")
-        myLogger.info(f"{commentBody} - {commentObj.author}")
+def checkTheComment(comment:str, author:str, adj: str, positiveVote: bool):
+    commentTBCompared = comment.lower().strip(" .!,")
+    if commentTBCompared == f'{adj} mod' or commentTBCompared == f'the {adj} mod':
+        myLogger.info(f"{comment} - {author}")
+        return 
         theParentCommentObj = commentObj.parent()
         theParentAuthorObj = theParentCommentObj.author
         myLogger.info(f"The parent is {theParentCommentObj.author}")
@@ -64,10 +63,22 @@ myLogger.setLevel(logging.DEBUG)
 reddit = praw.Reddit(client_id=rdtClntIDs[0],client_secret=rdtClntSecs[0],user_agent=rdtUsrnms[0], username=rdtUsrnms[0],password=rdtPswds[0])
 myLogger.info("Script started.")
 
-for commentObj in reddit.subreddit('all').stream.comments(skip_existing=True):
-    goodAdjectives = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb']
-    badAdjectives = ['bad', 'worst']
-    for adj in goodAdjectives:
-        checkTheComment(commentObj, adj, True)
-    for adj in badAdjectives:
-        checkTheComment(commentObj, adj, False)
+goodAdjectives = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb']
+badAdjectives = ['bad', 'worst']
+
+# preparing URL to ping on Pushshift. If term is phrase then wrap in quotes. OR can be indicated with Pipe symbol
+thenewAdjs = [f'"{x}' for x in goodAdjectives+badAdjectives]
+searchTerm = '%20mod"|'.join(thenewAdjs)+'%20mod"'
+finalURL = f"https://api.pushshift.io/reddit/search/comment/?q={searchTerm}&limit=100"
+
+while True:
+    r = requests.get(finalURL, timeout=30) # timeout is in secs
+    respJson = r.json()
+    for respData in respJson['data']:            
+        author = respData['author']
+        comment = respData['body']
+        for adj in goodAdjectives:
+            checkTheComment(comment, author, adj, positiveVote=True)
+        for adj in badAdjectives:
+            checkTheComment(comment, author, adj, positiveVote=False)
+    time.sleep(5)
