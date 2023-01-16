@@ -76,11 +76,11 @@ myLogger.setLevel(logging.DEBUG)
 
 REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[0],client_secret=rdtClntSecs[0],user_agent=rdtUsrnms[0], username=rdtUsrnms[0],password=rdtPswds[0])
 
-GOOD_ADJS = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb']
-BAD_ADJS = ['bad', 'worst']
+GOOD_ADJS = ['good', 'good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg"]
+BAD_ADJS = ['bad', 'worst', 'great', 'bad', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial"]
 
 # preparing URL to ping on Pushshift. If term is phrase then wrap in quotes. OR can be indicated with Pipe symbol
-thenewAdjs = [f'"{x}' for x in GOOD_ADJS+BAD_ADJS]
+thenewAdjs = [f'"{x}' for x in set(GOOD_ADJS+BAD_ADJS)] # set is to remove dupes if any
 searchTerm = '%20mod"|'.join(thenewAdjs)+'%20mod"'
 finalURL = f"https://api.pushshift.io/reddit/search/comment/?q={searchTerm}&limit=100"
 
@@ -91,7 +91,12 @@ except Exception as e:
     myLogger.error("Pushshift API gave error, quitting.")
     quit()
 
-respJson = r.json()
+if r.ok:
+    respJson = r.json()
+else:
+    myLogger.error(f"Received 'not ok' resp from Pushshift. Status code: {r.status_code}, Content: {r.content}")
+    quit()
+
 for respData in respJson['data']:            
     author = respData['author']
     postID = respData['link_id'][3:]
