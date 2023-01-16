@@ -49,8 +49,8 @@ def checkTheComment(respData: dict, comment:str, author:str, adj:str, positiveVo
             myLogger.info("recording db")
             recordVoteInDB(parentAuthorObj.name, positiveVote, subsModdedByParent)
             try:
-                commentObj.reply(f"Thanks for voting on {parentAuthorObj.name}.\n\n*On a quest to find the best mods on Reddit.*")
-                sendTgMessage("Mod Rank Bot commented, check it out.")
+                commentObj.reply(f"Thanks for voting on {parentAuthorObj.name}.\n\n*Curating Reddit's best mods.*")
+                sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
                 myLogger.info("Commented succyly")
             except praw.exceptions.RedditAPIException:
                 myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway recording vote & carring on...")
@@ -85,7 +85,7 @@ searchTerm = '%20mod"|'.join(thenewAdjs)+'%20mod"'
 finalURL = f"https://api.pushshift.io/reddit/search/comment/?q={searchTerm}&limit=100"
 
 try:
-    r = requests.get(finalURL, timeout=30) # timeout is in secs
+    r = requests.get(finalURL, timeout=60) # timeout is in secs
 except Exception as e:
     myLogger.error(e)
     myLogger.error("Pushshift API gave error, quitting.")
