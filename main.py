@@ -31,7 +31,7 @@ def checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj):
 def checkTheComment(respData: dict, comment:str, author:str, adj:str, positiveVote:bool):
     commentTBCompared = comment.lower().strip(" .!,")
     if commentTBCompared == f'{adj} mod' or commentTBCompared == f'the {adj} mod':
-        # check if comment was prevsly handled, as pushshift will naturally send dupes
+        # check if comment was prevsly handled, as pushshift will naturally send dupes. If it was prevsly handled, just return.
         commentID = respData['id']
         with open('prevCommIDs.txt', encoding='utf8') as f:
             prevCommIDs = f.read()
@@ -49,13 +49,25 @@ def checkTheComment(respData: dict, comment:str, author:str, adj:str, positiveVo
             myLogger.info("recording db")
             recordVoteInDB(parentAuthorObj.name, positiveVote, subsModdedByParent)
             try:
-                commentObj.reply(f"Thanks for voting on {parentAuthorObj.name}.\n\n*Curating Reddit's best mods.*")
-                sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
-                myLogger.info("Commented succyly")
+                # check if prevsly commented in post, if yes then dont comment again to reduce spam. Vote will get recorded still.                
+                with open('postIDsWhereIPrvslyComntd.txt', encoding='utf8') as f:
+                    postIDsWhereIPrvslyComntd = f.read()
+                postID = respData['link_id'][3:]
+                if postID not in postIDsWhereIPrvslyComntd:
+                    commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**.\n\n*Curating Reddit's best mods.*")
+                    sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
+                    myLogger.info("Commented succyly")
+                    # record post ID where commented, so as not to coment again in that post to reduce spam
+                    with open('postIDsWhereIPrvslyComntd.txt', 'a', encoding='utf8') as f:
+                        f.write(f"{postID} ")
+                else:
+                    # TODO: SEND A DM INSTEAD @#@#&(*&*@&(*@#&*(@#&(*@#&(*@(*#@*(&&)))))))
+                    myLogger.info(f"I had already commented in Post {postID}, hence not recommenting to reduce spam. Vote still got recorded.")
+                    sendTgMessage(f"ModRank Bot had alraey commented in Post https://reddit.com/{postID}, vote recorded though")
             except praw.exceptions.RedditAPIException:
-                myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway recording vote & carring on...")
+                myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway vote was recorded, so carring on...")
         else:
-            myLogger.warning(f"False comment. Parent wasn't a mod of sub where comment was made.")
+            myLogger.warning(f"False comment. Parent wasn't a mod of sub where comment was made, or was AutoMod.")
         
         # record handled comment, Pushshift will naturally keep sending dupes
         with open('prevCommIDs.txt', 'a', encoding='utf8') as f:
@@ -87,8 +99,7 @@ finalURL = f"https://api.pushshift.io/reddit/search/comment/?q={searchTerm}&limi
 try:
     r = requests.get(finalURL, timeout=60) # timeout is in secs
 except Exception as e:
-    myLogger.error(e)
-    myLogger.error("Pushshift API gave error, quitting.")
+    myLogger.error("Quitting. Pushshift API gave error: {e}")
     quit()
 
 if r.ok:
@@ -99,7 +110,6 @@ else:
 
 for respData in respJson['data']:            
     author = respData['author']
-    postID = respData['link_id'][3:]
     comment = respData['body']
     commentID = respData['id']
     for adj in GOOD_ADJS:
