@@ -42,7 +42,7 @@ def checkTheComment(respData: dict, comment:str, author:str, adj:str, positiveVo
         subreddit = respData['subreddit_name_prefixed']
         parentCommentObj = commentObj.parent()
         commentURL = f"https://www.reddit.com/{respData['permalink']}"
-        myLogger.debug(f"{author}\n{comment}\n{subreddit}\n{commentURL}\n{parentCommentObj.author} is parent\n")
+        myLogger.debug(f"{author}\n{comment}\n{subreddit}\n{commentURL}\n{parentCommentObj.author} is parent")
         parentAuthorObj = parentCommentObj.author
         subsModdedByParent = checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj)
         if subsModdedByParent:
@@ -67,7 +67,10 @@ def checkTheComment(respData: dict, comment:str, author:str, adj:str, positiveVo
             except praw.exceptions.RedditAPIException:
                 myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway vote was recorded, so carring on...")
         else:
-            myLogger.warning(f"False comment. Parent wasn't a mod of sub where comment was made, or was AutoMod.")
+            if parentCommentObj.author == 'AutoModerator':
+                myLogger.info(f"Skipped recording vote since parent was AutoMod.")
+            else:
+                myLogger.warning(f"False comment. Parent wasn't a mod of sub where comment was made.")
         
         # record handled comment, Pushshift will naturally keep sending dupes
         with open('prevCommIDs.txt', 'a', encoding='utf8') as f:
@@ -99,7 +102,7 @@ finalURL = f"https://api.pushshift.io/reddit/search/comment/?q={searchTerm}&limi
 try:
     r = requests.get(finalURL, timeout=60) # timeout is in secs
 except Exception as e:
-    myLogger.error("Quitting. Pushshift API gave error: {e}")
+    myLogger.error(f"Quitting. Pushshift API gave error: {e}")
     quit()
 
 if r.ok:
