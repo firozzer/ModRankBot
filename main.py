@@ -1,6 +1,6 @@
 #!/home/ubuntu/modrankbot/venv/bin/python3
 
-import logging, sys, os, requests, json, time
+import logging, sys, os, requests
 
 import praw
 
@@ -28,11 +28,13 @@ def checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj):
         return ' '.join(subsModdedByParent)
     return False
 
-def checkTheComment(respData: dict, comment:str, author:str, adj:str, positiveVote:bool):
+def checkTheComment(respData: dict, adj:str, positiveVote:bool):
+    author = respData['author']
+    comment = respData['body']
+    commentID = respData['id']
     commentTBCompared = comment.lower().strip(" .!,")
     if commentTBCompared == f'{adj} mod' or commentTBCompared == f'the {adj} mod':
         # check if comment was prevsly handled, as pushshift will naturally send dupes. If it was prevsly handled, just return.
-        commentID = respData['id']
         with open('prevCommIDs.txt', encoding='utf8') as f:
             prevCommIDs = f.read()
         if commentID in prevCommIDs:
@@ -61,9 +63,11 @@ def checkTheComment(respData: dict, comment:str, author:str, adj:str, positiveVo
                     with open('postIDsWhereIPrvslyComntd.txt', 'a', encoding='utf8') as f:
                         f.write(f"{postID} ")
                 else:
-                    # TODO: SEND A DM INSTEAD @#@#&(*&*@&(*@#&*(@#&(*@#&(*@(*#@*(&&)))))))
-                    myLogger.info(f"I had already commented in Post {postID}, hence not recommenting to reduce spam. Vote still got recorded.")
-                    sendTgMessage(f"ModRank Bot had alraey commented in Post https://reddit.com/{postID}, vote recorded though")
+                    myLogger.info(f"Already commented in Post {postID}, so DMing u/{author}.")
+                    sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DMing u/{author}.")
+                    # TODO uncomment below 2 lines the day your bot rank improves, it will send DM to voter that their vote ws recorded. Not posting in post to reduce spam.
+                    # commentAuthorObj = REDDIT_OBJ.redditor(author)
+                    # commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name}", message=f"[Your vote]({commentURL}) has been successfully recorded.\n\n*Curating Reddit's best mods.*'")
             except praw.exceptions.RedditAPIException:
                 myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway vote was recorded, so carring on...")
         else:
@@ -89,10 +93,11 @@ logging.basicConfig(level=logging.INFO,
 myLogger = logging.getLogger('myLogger')
 myLogger.setLevel(logging.DEBUG)
 
-REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[0],client_secret=rdtClntSecs[0],user_agent=rdtUsrnms[0], username=rdtUsrnms[0],password=rdtPswds[0])
+idxOfModRankBotCreds = rdtUsrnms.index('modrankbot')
+REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[idxOfModRankBotCreds],client_secret=rdtClntSecs[idxOfModRankBotCreds],user_agent=rdtUsrnms[idxOfModRankBotCreds], username=rdtUsrnms[idxOfModRankBotCreds],password=rdtPswds[idxOfModRankBotCreds])
 
-GOOD_ADJS = ['good', 'good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg"]
-BAD_ADJS = ['bad', 'worst', 'great', 'bad', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial"]
+GOOD_ADJS = ['good', 'good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg", 'cool']
+BAD_ADJS = ['bad', 'worst', 'great', 'bad', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial", 'dumb']
 
 # preparing URL to ping on Pushshift. If term is phrase then wrap in quotes. OR can be indicated with Pipe symbol
 thenewAdjs = [f'"{x}' for x in set(GOOD_ADJS+BAD_ADJS)] # set is to remove dupes if any
@@ -112,12 +117,9 @@ else:
     quit()
 
 for respData in respJson['data']:            
-    author = respData['author']
-    comment = respData['body']
-    commentID = respData['id']
     for adj in GOOD_ADJS:
-        checkTheComment(respData, comment, author, adj, positiveVote=True)
+        checkTheComment(respData, adj, positiveVote=True)
     for adj in BAD_ADJS:
-        checkTheComment(respData, comment, author, adj, positiveVote=False)
+        checkTheComment(respData, adj, positiveVote=False)
 
 myLogger.info("Script ran succyly.")
