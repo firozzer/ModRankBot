@@ -56,7 +56,7 @@ def checkTheComment(respData: dict, adj:str, positiveVote:bool):
                     postIDsWhereIPrvslyComntd = f.read()
                 postID = respData['link_id'][3:]
                 if postID not in postIDsWhereIPrvslyComntd:
-                    commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**.\n\n*Curating Reddit's best mods.*")
+                    commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
                     sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
                     myLogger.info("Commented succyly")
                     # record post ID where commented, so as not to coment again in that post to reduce spam
@@ -64,17 +64,21 @@ def checkTheComment(respData: dict, adj:str, positiveVote:bool):
                         f.write(f"{postID} ")
                 else:
                     myLogger.info(f"Already commented in Post {postID}, so DMing u/{author}.")
-                    sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DMing u/{author}.")
                     # TODO uncomment below 2 lines the day your bot rank improves, it will send DM to voter that their vote ws recorded. Not posting in post to reduce spam.
-                    # commentAuthorObj = REDDIT_OBJ.redditor(author)
-                    # commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name}", message=f"[Your vote]({commentURL}) has been successfully recorded.\n\n*Curating Reddit's best mods.*'")
+                    try:
+                        commentAuthorObj = REDDIT_OBJ.redditor(author)
+                        commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in r/{subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                        sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
+                    except Exception as e:
+                        myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
+                        sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
             except praw.exceptions.RedditAPIException:
                 myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway vote was recorded, so carring on...")
         else:
             if parentCommentObj.author == 'AutoModerator':
                 myLogger.info(f"Skipped recording vote since parent was AutoMod.")
             else:
-                myLogger.warning(f"False comment. Parent wasn't a mod of sub where comment was made.")
+                myLogger.warning(f"False comment. {parentAuthorObj.name} isn't a mod of {subreddit}, where comment was made.")
         
         # record handled comment, Pushshift will naturally keep sending dupes
         with open('prevCommIDs.txt', 'a', encoding='utf8') as f:
@@ -96,8 +100,8 @@ myLogger.setLevel(logging.DEBUG)
 idxOfModRankBotCreds = rdtUsrnms.index('modrankbot')
 REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[idxOfModRankBotCreds],client_secret=rdtClntSecs[idxOfModRankBotCreds],user_agent=rdtUsrnms[idxOfModRankBotCreds], username=rdtUsrnms[idxOfModRankBotCreds],password=rdtPswds[idxOfModRankBotCreds])
 
-GOOD_ADJS = ['good', 'good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg", 'cool']
-BAD_ADJS = ['bad', 'worst', 'great', 'bad', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial", 'dumb']
+GOOD_ADJS = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg", 'cool', 'mvp', 'og', 'goat']
+BAD_ADJS = ['bad', 'worst', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial", 'dumb', 'inconsiderate']
 
 # preparing URL to ping on Pushshift. If term is phrase then wrap in quotes. OR can be indicated with Pipe symbol
 thenewAdjs = [f'"{x}' for x in set(GOOD_ADJS+BAD_ADJS)] # set is to remove dupes if any
