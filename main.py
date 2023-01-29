@@ -50,30 +50,38 @@ def checkTheComment(respData: dict, adj:str, positiveVote:bool):
         if subsModdedByParent:
             myLogger.info("recording db")
             recordVoteInDB(parentAuthorObj.name, positiveVote, subsModdedByParent)
-            try:
-                # check if prevsly commented in post, if yes then dont comment again to reduce spam. Vote will get recorded still.                
-                with open('postIDsWhereIPrvslyComntd.txt', encoding='utf8') as f:
-                    postIDsWhereIPrvslyComntd = f.read()
-                postID = respData['link_id'][3:]
-                if postID not in postIDsWhereIPrvslyComntd:
+            # check if prevsly commented in post, if yes then dont comment again to reduce spam. Vote will get recorded still.                
+            with open('postIDsWhereIPrvslyComntd.txt', encoding='utf8') as f:
+                postIDsWhereIPrvslyComntd = f.read()
+            postID = respData['link_id'][3:]
+            if postID not in postIDsWhereIPrvslyComntd:
+                try:
                     commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
-                    sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
                     myLogger.info("Commented succyly")
+                    sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
                     # record post ID where commented, so as not to coment again in that post to reduce spam
                     with open('postIDsWhereIPrvslyComntd.txt', 'a', encoding='utf8') as f:
                         f.write(f"{postID} ")
-                else:
-                    myLogger.info(f"Already commented in Post {postID}, so DMing u/{author}.")
-                    # TODO uncomment below 2 lines the day your bot rank improves, it will send DM to voter that their vote ws recorded. Not posting in post to reduce spam.
+                except Exception as e:
+                    myLogger.info(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
+                    sendTgMessage(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
                     try:
                         commentAuthorObj = REDDIT_OBJ.redditor(author)
                         commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in {subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
-                        sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
+                        sendTgMessage(f"ModRank Bot here,  https://reddit.com/{postID}, DM'd u/{author}.")
                     except Exception as e:
                         myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
                         sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
-            except praw.exceptions.RedditAPIException:
-                myLogger.warning("Reddit didn't allow to comment, probly coz last comment was swa. Anyway vote was recorded, so carring on...")
+            else:
+                myLogger.info(f"Already commented in Post {postID}, so DMing u/{author}.")
+                # TODO uncomment below 2 lines the day your bot rank improves, it will send DM to voter that their vote ws recorded. Not posting in post to reduce spam.
+                try:
+                    commentAuthorObj = REDDIT_OBJ.redditor(author)
+                    commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in {subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                    sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
+                except Exception as e:
+                    myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
+                    sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
         else:
             if parentCommentObj.author == 'AutoModerator':
                 myLogger.info(f"Skipped recording vote since parent was AutoMod.")
