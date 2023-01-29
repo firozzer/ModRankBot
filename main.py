@@ -41,7 +41,7 @@ def checkTheComment(respData: dict, adj:str, positiveVote:bool):
             return
 
         commentObj = REDDIT_OBJ.comment(commentID)
-        subreddit = respData['subreddit_name_prefixed']
+        subreddit = respData['subreddit_name_prefixed'] # result will be string like 'r/dubai' (r/ included)
         parentCommentObj = commentObj.parent()
         commentURL = f"https://www.reddit.com/{respData['permalink']}"
         myLogger.debug(f"{author}\n{comment}\n{subreddit}\n{commentURL}\n{parentCommentObj.author} is parent")
@@ -67,7 +67,7 @@ def checkTheComment(respData: dict, adj:str, positiveVote:bool):
                     # TODO uncomment below 2 lines the day your bot rank improves, it will send DM to voter that their vote ws recorded. Not posting in post to reduce spam.
                     try:
                         commentAuthorObj = REDDIT_OBJ.redditor(author)
-                        commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in r/{subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                        commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in {subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
                         sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
                     except Exception as e:
                         myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
