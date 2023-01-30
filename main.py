@@ -28,7 +28,7 @@ def checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj):
         return ' '.join(subsModdedByParent)
     return False
 
-def checkTheComment(respData: dict, adj:str, positiveVote:bool):
+def checkTheComment(subreddit:str, respData: dict, adj:str, positiveVote:bool):
     author = respData['author']
     comment = respData['body']
     commentID = respData['id']
@@ -41,7 +41,6 @@ def checkTheComment(respData: dict, adj:str, positiveVote:bool):
             return
 
         commentObj = REDDIT_OBJ.comment(commentID)
-        subreddit = respData['subreddit_name_prefixed'] # result will be string like 'r/dubai' (r/ included)
         parentCommentObj = commentObj.parent()
         commentURL = f"https://www.reddit.com/{respData['permalink']}"
         myLogger.debug(f"{author}\n{comment}\n{subreddit}\n{commentURL}\n{parentCommentObj.author} is parent")
@@ -129,9 +128,13 @@ else:
     quit()
 
 for respData in respJson['data']:            
+    subreddit = respData['subreddit_name_prefixed'] # result will be string like 'r/dubai' (r/ included)
+    if subreddit.lower() == 'r/choosinggame':
+        # myLogger.info(f"Skipping comment from {subreddit}") # no good to log this as too much spam
+        continue
     for adj in GOOD_ADJS:
-        checkTheComment(respData, adj, positiveVote=True)
+        checkTheComment(subreddit, respData, adj, positiveVote=True)
     for adj in BAD_ADJS:
-        checkTheComment(respData, adj, positiveVote=False)
+        checkTheComment(subreddit, respData, adj, positiveVote=False)
 
 myLogger.info("Script ran succyly.")
