@@ -28,14 +28,19 @@ def checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj):
         return ' '.join(subsModdedByParent)
     return False
 
-def checkTheComment(subreddit:str, respData: dict, adj:str, positiveVote:bool):
+def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, positiveVote:bool):
+    commentsPrvslyCheckedStr = diskData['commentsPrvslyChecked'] # saving these as pushshift will naturally send dupes every min of checking
+    postsWhereiAlreadyCommentedStr = diskData['postsWhereiAlreadyCommented'] # saving these so as not to post > once in a post, DM instead
+    optedOutUsersList = diskData['optedOutUsers'] # not automated opted out user collection yet, add manualy into JSON whenever someone tells
+    skipTheseSubsList = diskData['skipTheseSubs'] # reloading this just to avoid scope probs on older pythons
+    
     author = respData['author']
     comment = respData['body']
     commentID = respData['id']
     commentTBCompared = comment.lower().strip(" .!,")
     if commentTBCompared == f'{adj} mod' or commentTBCompared == f'the {adj} mod':
         # check if comment was prevsly handled, as pushshift will naturally send dupes. If it was prevsly handled, just return.
-        if commentID in COMMENTS_PRVSLY_CHECKED_STR:
+        if commentID in commentsPrvslyCheckedStr:
             return
 
         commentObj = REDDIT_OBJ.comment(commentID)
@@ -50,7 +55,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, positiveVote:bool):
 
             # check if user has opted out, if yes don't reply or DM them
             userHasNotOptedOutOfReceivingReplies = True
-            for optedOutUser in OPTED_OUT_USERS_LIST:
+            for optedOutUser in optedOutUsersList:
                 if optedOutUser.lower() == author.lower():
                     userHasNotOptedOutOfReceivingReplies = False
                     myLogger.info(f"Not replying or DMing u{author} as they are in opt out list.")
@@ -59,13 +64,13 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, positiveVote:bool):
             if userHasNotOptedOutOfReceivingReplies:
                 # Comment or DM commenter vote confirmation. If prevsly commented in post then DM instead (spam reduction).
                 postID = respData['link_id'][3:]
-                if postID not in POSTS_WHERE_I_ALREADY_COMMENTED_STR:
+                if postID not in postsWhereiAlreadyCommentedStr:
                     try:
                         commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
                         myLogger.info("Commented succyly")
                         sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
                         # record post ID where commented, so as not to coment again in that post to reduce spam
-                        POSTS_WHERE_I_ALREADY_COMMENTED_STR += f" {postID}"
+                        postsWhereiAlreadyCommentedStr += f" {postID}"
                     except Exception as e:
                         myLogger.info(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
                         sendTgMessage(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
@@ -93,8 +98,12 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, positiveVote:bool):
                 myLogger.warning(f"False comment. {parentAuthorObj.name} isn't a mod of {subreddit}, where comment was made.")
         
         # record json to disk
-        COMMENTS_PRVSLY_CHECKED_STR += f" {commentID}"
-        newDiskData = {COMMENTS_PRVSLY_CHECKED_STR, POSTS_WHERE_I_ALREADY_COMMENTED_STR, SKIP_THESE_SUBS_LIST, OPTED_OUT_USERS_LIST}
+        commentsPrvslyCheckedStr += f" {commentID}"
+        newDiskData = {}
+        newDiskData['commentsPrvslyChecked'] = commentsPrvslyCheckedStr
+        newDiskData['postsWhereiAlreadyCommented'] = postsWhereiAlreadyCommentedStr
+        newDiskData['skipTheseSubs'] = skipTheseSubsList
+        newDiskData['optedOutUsers'] = optedOutUsersList
         with open('diskData.json', 'w', encoding='utf8') as f:
             json.dump(newDiskData, f)
 
@@ -114,10 +123,7 @@ myLogger.setLevel(logging.DEBUG)
 with open('diskData.json', encoding='utf8') as f:
   diskData = json.load(f)
 
-COMMENTS_PRVSLY_CHECKED_STR = diskData['commentsPrvslyChecked'] # saving these as pushshift will naturally send dupes every min of checking
-POSTS_WHERE_I_ALREADY_COMMENTED_STR = diskData['postsWhereiAlreadyCommented'] # saving these so as not to post > once in a post, DM instead
-SKIP_THESE_SUBS_LIST = diskData['skipTheseSubs']
-OPTED_OUT_USERS_LIST = diskData['optedOutUsers'] # not automated opted out user collection yet, add manualy into JSON whenever someone tells
+skipTheseSubsList = diskData['skipTheseSubs']
 
 idxOfModRankBotCreds = rdtUsrnms.index('modrankbot')
 REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[idxOfModRankBotCreds],client_secret=rdtClntSecs[idxOfModRankBotCreds],user_agent=rdtUsrnms[idxOfModRankBotCreds], username=rdtUsrnms[idxOfModRankBotCreds],password=rdtPswds[idxOfModRankBotCreds])
@@ -146,14 +152,14 @@ for respData in respJson['data']:
     subreddit = respData['subreddit_name_prefixed'][2:].lower() # starting 2nd index to skip the slash r
     
     dontSkipThisSub = True
-    for subToBeSkipped in SKIP_THESE_SUBS_LIST:        
+    for subToBeSkipped in skipTheseSubsList:        
         if subreddit == subToBeSkipped.lower():
             dontSkipThisSub = False
     
     if dontSkipThisSub:
         for adj in GOOD_ADJS:
-            checkTheComment(subreddit, respData, adj, positiveVote=True)
+            checkTheComment(subreddit, respData, adj, diskData, positiveVote=True)
         for adj in BAD_ADJS:
-            checkTheComment(subreddit, respData, adj, positiveVote=False)
+            checkTheComment(subreddit, respData, adj, diskData, positiveVote=False)
 
 myLogger.info("Script ran succyly.")
