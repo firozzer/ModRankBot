@@ -31,8 +31,8 @@ def checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj):
 def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, positiveVote:bool):
     commentsPrvslyCheckedStr = diskData['commentsPrvslyChecked'] # saving these as pushshift will naturally send dupes every min of checking
     postsWhereiAlreadyCommentedStr = diskData['postsWhereiAlreadyCommented'] # saving these so as not to post > once in a post, DM instead
-    optedOutUsersList = diskData['optedOutUsers'] # not automated opted out user collection yet, add manualy into JSON whenever someone tells
-    skipTheseSubsList = diskData['skipTheseSubs'] # reloading this just to avoid scope probs on older pythons
+    OPTED_OUT_USERS_LIST = diskData['optedOutUsers'] # not automated opted out user collection yet, add manualy into JSON whenever someone tells
+    SKIP_THESE_SUBS_LIST = diskData['skipTheseSubs'] # reloading this just to avoid scope probs on older pythons
     
     author = respData['author']
     comment = respData['body']
@@ -55,7 +55,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
 
             # check if user has opted out, if yes don't reply or DM them
             userHasNotOptedOutOfReceivingReplies = True
-            for optedOutUser in optedOutUsersList:
+            for optedOutUser in OPTED_OUT_USERS_LIST:
                 if optedOutUser.lower() == author.lower():
                     userHasNotOptedOutOfReceivingReplies = False
                     myLogger.info(f"Not replying or DMing u{author} as they are in opt out list.")
@@ -102,8 +102,8 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
         newDiskData = {}
         newDiskData['commentsPrvslyChecked'] = commentsPrvslyCheckedStr
         newDiskData['postsWhereiAlreadyCommented'] = postsWhereiAlreadyCommentedStr
-        newDiskData['skipTheseSubs'] = skipTheseSubsList
-        newDiskData['optedOutUsers'] = optedOutUsersList
+        newDiskData['skipTheseSubs'] = SKIP_THESE_SUBS_LIST
+        newDiskData['optedOutUsers'] = OPTED_OUT_USERS_LIST
         with open('diskData.json', 'w', encoding='utf8') as f:
             json.dump(newDiskData, f)
 
@@ -123,7 +123,7 @@ myLogger.setLevel(logging.DEBUG)
 with open('diskData.json', encoding='utf8') as f:
   diskData = json.load(f)
 
-skipTheseSubsList = diskData['skipTheseSubs']
+SKIP_THESE_SUBS_LIST = diskData['skipTheseSubs']
 
 idxOfModRankBotCreds = rdtUsrnms.index('modrankbot')
 REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[idxOfModRankBotCreds],client_secret=rdtClntSecs[idxOfModRankBotCreds],user_agent=rdtUsrnms[idxOfModRankBotCreds], username=rdtUsrnms[idxOfModRankBotCreds],password=rdtPswds[idxOfModRankBotCreds])
@@ -152,7 +152,7 @@ for respData in respJson['data']:
     subreddit = respData['subreddit_name_prefixed'][2:].lower() # starting 2nd index to skip the slash r
     
     dontSkipThisSub = True
-    for subToBeSkipped in skipTheseSubsList:        
+    for subToBeSkipped in SKIP_THESE_SUBS_LIST:        
         if subreddit == subToBeSkipped.lower():
             dontSkipThisSub = False
     
