@@ -1,6 +1,6 @@
 #!/home/ubuntu/modrankbot/venv/bin/python3
 
-import logging, sys, os, requests
+import logging, sys, os, requests, json
 
 import praw
 
@@ -35,9 +35,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, positiveVote:bool):
     commentTBCompared = comment.lower().strip(" .!,")
     if commentTBCompared == f'{adj} mod' or commentTBCompared == f'the {adj} mod':
         # check if comment was prevsly handled, as pushshift will naturally send dupes. If it was prevsly handled, just return.
-        with open('prevCommIDs.txt', encoding='utf8') as f:
-            prevCommIDs = f.read()
-        if commentID in prevCommIDs:
+        if commentID in COMMENTS_PRVSLY_CHECKED_STR:
             return
 
         commentObj = REDDIT_OBJ.comment(commentID)
@@ -49,28 +47,35 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, positiveVote:bool):
         if subsModdedByParent:
             myLogger.info("recording db")
             recordVoteInDB(parentAuthorObj.name, positiveVote, subsModdedByParent)
-            # check if prevsly commented in post, if yes then dont comment again to reduce spam. Vote will get recorded still.                
-            with open('postIDsWhereIPrvslyComntd.txt', encoding='utf8') as f:
-                postIDsWhereIPrvslyComntd = f.read()
-            postID = respData['link_id'][3:]
-            if postID not in postIDsWhereIPrvslyComntd:
-                try:
-                    commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
-                    myLogger.info("Commented succyly")
-                    sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
-                    # record post ID where commented, so as not to coment again in that post to reduce spam
-                    with open('postIDsWhereIPrvslyComntd.txt', 'a', encoding='utf8') as f:
-                        f.write(f"{postID} ")
-                except Exception as e:
-                    myLogger.info(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
-                    sendTgMessage(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
+
+            # check if user has opted out, if yes don't reply or DM them
+            userHasNotOptedOutOfReceivingReplies = True
+            for optedOutUser in OPTED_OUT_USERS_LIST:
+                if optedOutUser.lower() == author.lower():
+                    userHasNotOptedOutOfReceivingReplies = False
+                    myLogger.info(f"Not replying or DMing u{author} as they are in opt out list.")
+                    break
+
+            if userHasNotOptedOutOfReceivingReplies:
+                # Comment or DM commenter vote confirmation. If prevsly commented in post then DM instead (spam reduction).
+                postID = respData['link_id'][3:]
+                if postID not in POSTS_WHERE_I_ALREADY_COMMENTED_STR:
                     try:
-                        commentAuthorObj = REDDIT_OBJ.redditor(author)
-                        commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in {subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
-                        sendTgMessage(f"ModRank Bot here,  https://reddit.com/{postID}, DM'd u/{author}.")
+                        commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                        myLogger.info("Commented succyly")
+                        sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
+                        # record post ID where commented, so as not to coment again in that post to reduce spam
+                        POSTS_WHERE_I_ALREADY_COMMENTED_STR += f" {postID}"
                     except Exception as e:
-                        myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
-                        sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
+                        myLogger.info(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
+                        sendTgMessage(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
+                        try:
+                            commentAuthorObj = REDDIT_OBJ.redditor(author)
+                            commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in {subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                            sendTgMessage(f"ModRank Bot here,  https://reddit.com/{postID}, DM'd u/{author}.")
+                        except Exception as e:
+                            myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
+                            sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
             else:
                 myLogger.info(f"Already commented in Post {postID}, so DMing u/{author}.")
                 # TODO uncomment below 2 lines the day your bot rank improves, it will send DM to voter that their vote ws recorded. Not posting in post to reduce spam.
@@ -87,9 +92,11 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, positiveVote:bool):
             else:
                 myLogger.warning(f"False comment. {parentAuthorObj.name} isn't a mod of {subreddit}, where comment was made.")
         
-        # record handled comment, Pushshift will naturally keep sending dupes
-        with open('prevCommIDs.txt', 'a', encoding='utf8') as f:
-            f.write(f"{commentID} ")
+        # record json to disk
+        COMMENTS_PRVSLY_CHECKED_STR += f" {commentID}"
+        newDiskData = {COMMENTS_PRVSLY_CHECKED_STR, POSTS_WHERE_I_ALREADY_COMMENTED_STR, SKIP_THESE_SUBS_LIST, OPTED_OUT_USERS_LIST}
+        with open('diskData.json', 'w', encoding='utf8') as f:
+            json.dump(newDiskData, f)
 
 # configure logging settings
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -104,10 +111,18 @@ logging.basicConfig(level=logging.INFO,
 myLogger = logging.getLogger('myLogger')
 myLogger.setLevel(logging.DEBUG)
 
+with open('diskData.json', encoding='utf8') as f:
+  diskData = json.load(f)
+
+COMMENTS_PRVSLY_CHECKED_STR = diskData['commentsPrvslyChecked'] # saving these as pushshift will naturally send dupes every min of checking
+POSTS_WHERE_I_ALREADY_COMMENTED_STR = diskData['postsWhereiAlreadyCommented'] # saving these so as not to post > once in a post, DM instead
+SKIP_THESE_SUBS_LIST = diskData['skipTheseSubs']
+OPTED_OUT_USERS_LIST = diskData['optedOutUsers'] # not automated opted out user collection yet, add manualy into JSON whenever someone tells
+
 idxOfModRankBotCreds = rdtUsrnms.index('modrankbot')
 REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[idxOfModRankBotCreds],client_secret=rdtClntSecs[idxOfModRankBotCreds],user_agent=rdtUsrnms[idxOfModRankBotCreds], username=rdtUsrnms[idxOfModRankBotCreds],password=rdtPswds[idxOfModRankBotCreds])
 
-GOOD_ADJS = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg", 'cool', 'mvp', 'og', 'goat']
+GOOD_ADJS = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg", 'cool', 'mvp', 'og', 'goat', 'chad', 'legendary', 'based']
 BAD_ADJS = ['bad', 'worst', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial", 'dumb', 'inconsiderate']
 
 # preparing URL to ping on Pushshift. If term is phrase then wrap in quotes. OR can be indicated with Pipe symbol
@@ -128,13 +143,17 @@ else:
     quit()
 
 for respData in respJson['data']:            
-    subreddit = respData['subreddit_name_prefixed'] # result will be string like 'r/dubai' (r/ included)
-    if subreddit.lower() == 'r/choosinggame':
-        # myLogger.info(f"Skipping comment from {subreddit}") # no good to log this as too much spam
-        continue
-    for adj in GOOD_ADJS:
-        checkTheComment(subreddit, respData, adj, positiveVote=True)
-    for adj in BAD_ADJS:
-        checkTheComment(subreddit, respData, adj, positiveVote=False)
+    subreddit = respData['subreddit_name_prefixed'][2:].lower() # starting 2nd index to skip the slash r
+    
+    dontSkipThisSub = True
+    for subToBeSkipped in SKIP_THESE_SUBS_LIST:        
+        if subreddit == subToBeSkipped.lower():
+            dontSkipThisSub = False
+    
+    if dontSkipThisSub:
+        for adj in GOOD_ADJS:
+            checkTheComment(subreddit, respData, adj, positiveVote=True)
+        for adj in BAD_ADJS:
+            checkTheComment(subreddit, respData, adj, positiveVote=False)
 
 myLogger.info("Script ran succyly.")
