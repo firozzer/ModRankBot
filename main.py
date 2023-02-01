@@ -64,7 +64,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
                 postID = respData['link_id'][3:]
                 if postID not in postsWhereiAlreadyCommentedStr:
                     try:
-                        commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                        commentObj.reply(f"Thanks for voting on **{parentAuthorObj.name}**. Reply '!OptOut' to stop replying.\n\n*Check out the [rankings table](https://modrank.netlify.app/).*")
                         myLogger.info("Commented succyly")
                         sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
                         # record post ID where commented, so as not to coment again in that post to reduce spam
@@ -74,7 +74,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
                         sendTgMessage(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentAuthorObj.name}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}")
                         try:
                             commentAuthorObj = REDDIT_OBJ.redditor(author)
-                            commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in r/{subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                            commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in r/{subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Check out the [rankings table](https://modrank.netlify.app/).*")
                             sendTgMessage(f"ModRank Bot here,  https://reddit.com/{postID}, DM'd u/{author}.")
                         except Exception as e:
                             myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
@@ -83,7 +83,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
                     myLogger.info(f"Already commented in Post {postID}, so DMing u/{author}.")
                     try:
                         commentAuthorObj = REDDIT_OBJ.redditor(author)
-                        commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in r/{subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                        commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in r/{subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Check out the [rankings table](https://modrank.netlify.app/).*")
                         sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
                     except Exception as e:
                         myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
