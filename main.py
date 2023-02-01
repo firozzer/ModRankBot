@@ -53,15 +53,10 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
             myLogger.info("recording db")
             recordVoteInDB(parentAuthorObj.name, positiveVote, subsModdedByParent)
 
-            # check if user has opted out, if yes don't reply or DM them
-            userHasNotOptedOutOfReceivingReplies = True
-            for optedOutUser in OPTED_OUT_USERS_LIST:
-                if optedOutUser.lower() == author.lower():
-                    userHasNotOptedOutOfReceivingReplies = False
-                    myLogger.info(f"Not replying or DMing u{author} as they are in opt out list.")
-                    break
-
-            if userHasNotOptedOutOfReceivingReplies:
+            userHasOptedOutOfReceivingReplies = [x for x in OPTED_OUT_USERS_LIST if x.lower() == author.lower()]
+            if userHasOptedOutOfReceivingReplies:
+                myLogger.info(f"Not replying or DMing u{author} as they are in opt out list.")
+            else:
                 # Comment or DM commenter vote confirmation. If prevsly commented in post then DM instead (spam reduction).
                 postID = respData['link_id'][3:]
                 if postID not in postsWhereiAlreadyCommentedStr:
@@ -81,16 +76,15 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
                         except Exception as e:
                             myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
                             sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
-            else:
-                myLogger.info(f"Already commented in Post {postID}, so DMing u/{author}.")
-                # TODO uncomment below 2 lines the day your bot rank improves, it will send DM to voter that their vote ws recorded. Not posting in post to reduce spam.
-                try:
-                    commentAuthorObj = REDDIT_OBJ.redditor(author)
-                    commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in {subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
-                    sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
-                except Exception as e:
-                    myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
-                    sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
+                else:
+                    myLogger.info(f"Already commented in Post {postID}, so DMing u/{author}.")
+                    try:
+                        commentAuthorObj = REDDIT_OBJ.redditor(author)
+                        commentAuthorObj.message(subject=f"Thanks for voting on u/{parentAuthorObj.name} in {subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Curating Reddit's best mods.*")
+                        sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
+                    except Exception as e:
+                        myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
+                        sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
         else:
             if parentCommentObj.author == 'AutoModerator':
                 myLogger.info(f"Skipped recording vote since parent was AutoMod.")
@@ -151,12 +145,9 @@ else:
 for respData in respJson['data']:            
     subreddit = respData['subreddit_name_prefixed'][2:].lower() # starting 2nd index to skip the slash r
     
-    dontSkipThisSub = True
-    for subToBeSkipped in SKIP_THESE_SUBS_LIST:        
-        if subreddit == subToBeSkipped.lower():
-            dontSkipThisSub = False
+    aSubToBeSkipped = [x for x in SKIP_THESE_SUBS_LIST if x.lower() == subreddit.lower()]
     
-    if dontSkipThisSub:
+    if not aSubToBeSkipped:
         for adj in GOOD_ADJS:
             checkTheComment(subreddit, respData, adj, diskData, positiveVote=True)
         for adj in BAD_ADJS:
