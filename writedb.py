@@ -4,7 +4,6 @@ def recordVoteInDB(modName: str, positiveVote: bool, subreddits: str):
     con = sqlite3.connect("modrank.db")
     cursor = con.cursor()
     # cursor.execute("CREATE TABLE mods(username TEXT UNIQUE, pos_votes INTEGER, neg_votes INTEGER, subreddits TEXT)")
-    # cursor.execute("DELETE from mods") # delete all recoreds
 
     if positiveVote:
         cursor.execute("""
