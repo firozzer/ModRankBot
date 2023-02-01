@@ -1,0 +1,31 @@
+body {
+    background-color: black;
+    color: white;
+}
+
+#rankingsTable {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%);
+
+}
+
+table {
+    border-spacing: 1em 0;
+}
+
+table tr {
+    box-shadow: 0 1px white;
+}
+
+table td {
+    text-align: center;
+}
+
+table th:hover {
+    cursor: pointer;
+    color: grey;
+}
+table th {
+    font-size: 1.5em;
+}
