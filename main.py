@@ -97,8 +97,21 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
         # record json to disk
         commentsPrvslyCheckedStr += f" {commentID}"
         newDiskData = {}
+        
+        noOfIDsIWishToMaintainInJSON = 200 # pushshift will give 100 unique IDs MAX in 1 go, so 200 is > safe.
+        # trimming prevsly checked comment IDs 
+        commentsPrvslyCheckedList = commentsPrvslyCheckedStr.split()
+        noOfOldIDsTBTrimmed = len(commentsPrvslyCheckedList) - noOfIDsIWishToMaintainInJSON
+        commentsPrvslyCheckedList = commentsPrvslyCheckedList[noOfOldIDsTBTrimmed:] # trimming from front as newer IDs are appended to str at end
+        commentsPrvslyCheckedStr = ' '.join(commentsPrvslyCheckedList)
         newDiskData['commentsPrvslyChecked'] = commentsPrvslyCheckedStr
+        # trimming post IDs where i've commented
+        postsWhereiAlreadyCommentedList = postsWhereiAlreadyCommentedStr.split()
+        noOfOldIDsTBTrimmed = len(postsWhereiAlreadyCommentedList) - noOfIDsIWishToMaintainInJSON
+        postsWhereiAlreadyCommentedList = postsWhereiAlreadyCommentedList[noOfOldIDsTBTrimmed:] # trimming from front as newer IDs are appended to str at end
+        postsWhereiAlreadyCommentedStr = ' '.join(postsWhereiAlreadyCommentedList)
         newDiskData['postsWhereiAlreadyCommented'] = postsWhereiAlreadyCommentedStr
+        
         newDiskData['skipTheseSubs'] = SKIP_THESE_SUBS_LIST
         newDiskData['optedOutUsers'] = OPTED_OUT_USERS_LIST
         with open('diskData.json', 'w', encoding='utf8') as f:
