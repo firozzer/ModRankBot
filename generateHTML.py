@@ -41,8 +41,7 @@ def generateHTMLAndPushToGithub(modNames:list):
         file.write(str(soup))
     
     input("shall i run git?")
-    # commit to local git
+    # commit to local git & push to Github, from where Netlify will pickup autoly
     subprocess.run(f"""git add . ; git commit -m "{' '.join(modNames)} new vote/s added" ; git push origin main """, shell=True)
-
-
-generateHTMLAndPushToGithub(['testuser1', 'testuser2'])
+    # to bypass creds request everytime on push, i ran 'git config credential.helper store' from Stackoverlfow. This method is BAD because it stores pw in plaintext in Git.
+    
