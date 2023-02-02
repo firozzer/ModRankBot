@@ -138,7 +138,7 @@ SKIP_THESE_SUBS_LIST = diskData['skipTheseSubs']
 idxOfModRankBotCreds = rdtUsrnms.index('modrankbot')
 REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[idxOfModRankBotCreds],client_secret=rdtClntSecs[idxOfModRankBotCreds],user_agent=rdtUsrnms[idxOfModRankBotCreds], username=rdtUsrnms[idxOfModRankBotCreds],password=rdtPswds[idxOfModRankBotCreds])
 
-GOOD_ADJS = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg", 'cool', 'mvp', 'og', 'goat', 'chad', 'legendary', 'based']
+GOOD_ADJS = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg", 'cool', 'mvp', 'og', 'goat', 'chad', 'legendary', 'based', 'dope']
 BAD_ADJS = ['bad', 'worst', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial", 'dumb', 'inconsiderate']
 
 # preparing URL to ping on Pushshift. If term is phrase then wrap in quotes. OR can be indicated with Pipe symbol
@@ -169,10 +169,13 @@ for respData in respJson['data']:
     if not aSubToBeSkipped:
         for adj in GOOD_ADJS:
             newVoteRecvdFor = checkTheComment(subreddit, respData, adj, diskData, positiveVote=True)
+            if newVoteRecvdFor:
+                websiteToBeUpdatedForNewVotesOnTheseMods.append(newVoteRecvdFor)
         for adj in BAD_ADJS:
             newVoteRecvdFor = checkTheComment(subreddit, respData, adj, diskData, positiveVote=False)
-        if newVoteRecvdFor:
-            websiteToBeUpdatedForNewVotesOnTheseMods.append(newVoteRecvdFor)
+            if newVoteRecvdFor:
+                websiteToBeUpdatedForNewVotesOnTheseMods.append(newVoteRecvdFor)
+
 if websiteToBeUpdatedForNewVotesOnTheseMods:
     myLogger.info("Generating new HTML & pushing to Github")
     generateHTMLAndPushToGithub(websiteToBeUpdatedForNewVotesOnTheseMods)
