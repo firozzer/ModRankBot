@@ -4,37 +4,44 @@ from bs4 import BeautifulSoup
 def generateHTMLAndPushToGithub(modNames:list):
     baseHTML = """
     <html lang="en">
-    <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testing</title>
-    <link rel="stylesheet" href="index.css">
-    </head>
-    <body>
-    <div id="mainContent">
-        <table id="rankingsTable">
-        <tr>
-            <th>Mod Name</th>
-            <th>+ve Votes</th>
-            <th>-ve Votes</th>
-        </tr>
-        </table>
-    </div>
-    </body>
-    <footer>
-    <script src="index.js"></script>
-    </footer>
+        <head>
+            <meta charset="UTF-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Reddit Mod Ranks</title>
+            <link rel="stylesheet" href="index.css">
+        </head>
+        <body>
+            <div id="mainContent">
+                <table id="rankingsTable">
+                    <tr>
+                        <th>Mod Name</th>
+                        <th>+ve Votes</th>
+                        <th>-ve Votes</th>
+                        <th>Score*</th>
+                    </tr>
+                </table>
+                <div id="statsBelowTable"></div>
+            </div>
+        </body>
+        <footer>
+            <script src="index.js"></script>
+        </footer>
     </html>
     """
 
     soup = BeautifulSoup(baseHTML)
     tableElem = soup.find('table', {'id': 'rankingsTable'})
+    statsBelowTableElem = soup.find('div', {'id': 'statsBelowTable'})
     con = sqlite3.connect("modrank.db")
     cursor = con.cursor()
-    rowsFromSQLite = cursor.execute("SELECT * FROM mods ORDER BY pos_votes DESC").fetchall()
+    rowsFromSQLite = cursor.execute("SELECT username, pos_votes, neg_votes FROM mods ORDER BY (pos_votes-neg_votes) DESC").fetchall() # you'll get username:Str, posVotes:Int, negVotes:Int & subsModded:Str. Last is delimited by space.
+    totalNoOfModsInDB = 0
+    totalVotesInDB = 0
     for row in rowsFromSQLite:
-        tableElem.append(BeautifulSoup(f'<tr><td>{row[0]}</td><td>{row[1]}</td><td>{row[2]}</td>', 'html.parser'))
+        tableElem.append(BeautifulSoup(f'<tr><td>{row[0]}</td><td>{row[1]}</td><td>{row[2]}</td><td>{row[1]-row[2]}</td>', 'html.parser'))
+        totalNoOfModsInDB += 1; totalVotesInDB += row[1] + row[2]
+    statsBelowTableElem.append(BeautifulSoup(f"<p>Total Mods: {totalNoOfModsInDB} | Total Votes: {totalVotesInDB} | *Score = Pos - Neg Votes</p>", 'html.parser'))
 
     os.chdir('frontend/')
     with open(r'index.html', "w", encoding="utf-8") as file:
