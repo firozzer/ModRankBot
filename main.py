@@ -15,12 +15,12 @@ def sendTgMessage(message):
     payload = {'chat_id':myTgID, 'text': f"""{message}"""}
     requests.post(url,json=payload)
 
-def checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj):
+def checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj, author):
     """
     Returns str of subs modded by parent, if indeed parent was mod of that sub.
     Else, returns False. Also returns False if parent was AutoMod
     """
-    if parentAuthorObj.name == "AutoModerator":
+    if parentAuthorObj.name == "AutoModerator" or parentAuthorObj.name == author:
         return False
     subWhereCommentWasMade = commentObj.subreddit
     subsModdedByParent = parentAuthorObj.moderated()
@@ -54,7 +54,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
         parentName = parentAuthorObj.name # not doing lower as hoping Reddit API will maintain proper capitalization lifelong.
         if parentName[:2] == 'u/': parentName = parentName[2:] # who knows if Reddit API will give prepended or not, so this check in place
         
-        subsModdedByParent = checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj)
+        subsModdedByParent = checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj, author)
         if subsModdedByParent:
             myLogger.info("recording db")
             recordVoteInDB(parentName, positiveVote, subsModdedByParent)
@@ -92,7 +92,9 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
                         myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
                         sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")
         else:
-            if parentCommentObj.author == 'AutoModerator':
+            if author == parentAuthorObj.name:
+                myLogger.info(f"False self vote by mod")
+            elif parentCommentObj.author == 'AutoModerator':
                 myLogger.info(f"Skipped recording vote since parent was AutoMod.")
             else:
                 myLogger.warning(f"False comment. {parentName} isn't a mod of {subreddit}, where comment was made.")

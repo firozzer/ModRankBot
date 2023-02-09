@@ -10,6 +10,7 @@ def generateHTMLAndPushToGithub(modNames:list):
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Reddit Mod Ranks</title>
             <link rel="stylesheet" href="index.css">
+            <link rel="icon" type="image/x-icon" href="trophy.ico">
         </head>
         <body>
             <div id="mainContent">
