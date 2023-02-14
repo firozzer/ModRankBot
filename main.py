@@ -57,7 +57,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
         subsModdedByParent = checkIfParentReallyIsModOfTHATSub(commentObj, parentAuthorObj, author)
         if subsModdedByParent:
             myLogger.info("recording db")
-            recordVoteInDB(parentName, positiveVote, subsModdedByParent)
+            recordVoteInDB(parentName, positiveVote, subsModdedByParent, subreddit)
 
             userHasOptedOutOfReceivingReplies = [x for x in OPTED_OUT_USERS_LIST if x.lower() == author.lower()]
             if userHasOptedOutOfReceivingReplies:
@@ -141,7 +141,7 @@ idxOfModRankBotCreds = rdtUsrnms.index('modrankbot')
 REDDIT_OBJ = praw.Reddit(client_id=rdtClntIDs[idxOfModRankBotCreds],client_secret=rdtClntSecs[idxOfModRankBotCreds],user_agent=rdtUsrnms[idxOfModRankBotCreds], username=rdtUsrnms[idxOfModRankBotCreds],password=rdtPswds[idxOfModRankBotCreds])
 
 GOOD_ADJS = ['good', 'great', 'greatest', 'best', 'awesome', 'amazing', 'nice', 'excellent', 'superb', "excellente", "excelent", "wonderful", "brave", "super", "incredible", "sweet", "lovely", "bold", "sexy", "gg", 'cool', 'mvp', 'og', 'goat', 'chad', 'legendary', 'based', 'dope']
-BAD_ADJS = ['bad', 'worst', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial", 'dumb', 'inconsiderate']
+BAD_ADJS = ['bad', 'worst', "insensitive", "harsh", "rash", "rude", "senseless", "dictatorial", 'dumb', 'inconsiderate', 'shitty']
 
 # preparing URL to ping on Pushshift. If term is phrase then wrap in quotes. OR can be indicated with Pipe symbol
 thenewAdjs = [f'"{x}' for x in set(GOOD_ADJS+BAD_ADJS)] # set is to remove dupes if any
