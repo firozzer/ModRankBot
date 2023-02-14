@@ -69,7 +69,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
                     try:
                         commentObj.reply(f"Thanks for voting on **{parentName}**. Reply '!OptOut' to stop replying.\n\n*Check out the [rankings table](https://modrank.netlify.app/).*")
                         myLogger.info(f"Commented succyly: {commentURL}")
-                        # sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
+                        sendTgMessage(f"Mod Rank Bot commented: {commentURL}")
                         # record post ID where commented, so as not to coment again in that post to reduce spam
                         postsWhereiAlreadyCommentedStr += f" {postID}"
                     except Exception as e: # if public comment fails for some reason, DM
@@ -87,7 +87,7 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
                         commentAuthorObj = REDDIT_OBJ.redditor(author)
                         commentAuthorObj.message(subject=f"Thanks for voting on u/{parentName} in r/{subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Check out the [rankings table](https://modrank.netlify.app/).*")
                         myLogger.info(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
-                        # sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
+                        sendTgMessage(f"ModRank Bot already commented in Post https://reddit.com/{postID}, so DM'd u/{author}.")
                     except Exception as e:
                         myLogger.error(f"Error when trying to DM {author} https://reddit.com/{postID} : {e}")
                         sendTgMessage(f"ModRank Bot failed to DM https://reddit.com/{postID}, DM failed to u/{author}.")

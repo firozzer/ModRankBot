@@ -16,10 +16,11 @@ def generateHTMLAndPushToGithub(modNames:list):
             <div id="mainContent">
                 <table id="rankingsTable">
                     <tr>
-                        <th>Mod Name</th>
-                        <th>+ve Votes</th>
-                        <th>-ve Votes</th>
-                        <th>Score*</th>
+                        <th><a>Mod Name</a></th>
+                        <th><a>Score*</a></th>
+                        <th><a>+ve Votes</a></th>
+                        <th><a>-ve Votes</a></th>
+                        <th><a>Subreddits*</a></th>
                     </tr>
                 </table>
                 <div id="statsBelowTable"></div>
@@ -36,13 +37,26 @@ def generateHTMLAndPushToGithub(modNames:list):
     statsBelowTableElem = soup.find('div', {'id': 'statsBelowTable'})
     con = sqlite3.connect("modrank.db")
     cursor = con.cursor()
-    rowsFromSQLite = cursor.execute("SELECT username, pos_votes, neg_votes FROM mods ORDER BY (pos_votes-neg_votes) DESC").fetchall() # you'll get username:Str, posVotes:Int, negVotes:Int & subsModded:Str. Last is delimited by space.
+    rowsFromSQLite = cursor.execute("SELECT username, pos_votes, neg_votes, sub_voted FROM mods ORDER BY (pos_votes-neg_votes) DESC").fetchall() # you'll get username:Str, posVotes:Int, negVotes:Int & subsModded:Str. Last is delimited by space.
     totalNoOfModsInDB = 0
     totalVotesInDB = 0
     for row in rowsFromSQLite:
-        tableElem.append(BeautifulSoup(f'<tr><td>{row[0]}</td><td>{row[1]}</td><td>{row[2]}</td><td>{row[1]-row[2]}</td>', 'html.parser'))
-        totalNoOfModsInDB += 1; totalVotesInDB += row[1] + row[2]
-    statsBelowTableElem.append(BeautifulSoup(f"<p>Total Mods: {totalNoOfModsInDB} | Total Votes: {totalVotesInDB} | *Score = Pos - Neg Votes</p>", 'html.parser'))
+        username = row[0]; pos_votes = row[1]; neg_votes = row[2]
+        score = row[1]-row[2]
+
+        sub_voted = row[3]
+        subNames = []
+        if sub_voted: # as sometimes None might come due to my laziness
+            for sub in sub_voted.split():
+                subName, _ = sub.split('~^~')
+                subNames.append(subName)
+            subNames = ' '.join(subNames)        
+        else:
+            subNames = ''
+            
+        tableElem.append(BeautifulSoup(f'<tr><td>{username}</td><td>{score}</td><td>{pos_votes}</td><td>{neg_votes}</td><td>{subNames}</td>', 'html.parser'))
+        totalNoOfModsInDB += 1; totalVotesInDB += pos_votes + neg_votes
+    statsBelowTableElem.append(BeautifulSoup(f"<p>Total Mods: {totalNoOfModsInDB} | Total Votes: {totalVotesInDB} | *Score = Pos - Neg Votes | *Subreddits = Subs where votes were recvd.</p>", 'html.parser'))
 
     os.chdir('frontend/')
     with open(r'index.html', "w", encoding="utf-8") as file:
