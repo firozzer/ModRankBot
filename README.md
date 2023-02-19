@@ -2,6 +2,4 @@ Sauce code for u/ModRankBot on Reddit.
 
 Sorry for spaghetti, gotta write this readme properly too.
 
-Frontend Repo: https://github.com/firozzer/ModRankBot-Website
-
-Generating & deploying new frontend in realtime upon each new vote.
+Generating & deploying vanilla frontend in realtime upon each new vote.
