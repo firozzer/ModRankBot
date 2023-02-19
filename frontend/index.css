@@ -1,0 +1,52 @@
+body {
+    background-color: black;
+    color: white;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+tr:nth-child(even) {
+    background-color: #575757; /* alternate row colors */
+}
+
+#statsBelowTable {
+    display: flex;
+    font-weight: bold;
+    font-size: 1.2em;
+    color: grey;
+}
+
+#mainContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-wrap: wrap; /* added this when i noticed on narrow screens left is getting cut off, not even scrollable */
+}
+
+table {
+    font-size: 0.9em;
+    border-collapse: collapse; /* this is so that row shows like 1 full horizontal line */
+    text-align: center; /* needed to align text in TDs */
+}
+
+table th {
+    font-size: 1.2em;
+    border-right: 3px solid #575757; /* delimiting headers since I'm squishing them. Squishing is correct since anyway data is teeny */
+}
+
+td {
+    padding: 0px 0.5em; /* longest username gets mixed with vote otherwise */
+    white-space: nowrap; /* to prevent TD text from wraping */
+}
+
+.subsShown {
+    max-width: 100%; /* shows full row when toggled */
+}
+
+table th:hover {
+    cursor: pointer;
+    color: grey;
+}
+
+input[type=checkbox] {
+    transform: scale(2.5);
+}
