@@ -50,3 +50,10 @@ table th:hover {
 input[type=checkbox] {
     transform: scale(2.5);
 }
+
+table th {
+    position: -webkit-sticky; /* this is for all Safari (Desktop & iOS), not for Chrome*/
+    position: sticky;
+    top: 0;
+    background: #000; /* any bg-color to overlap */
+}
