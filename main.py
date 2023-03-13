@@ -73,8 +73,8 @@ def checkTheComment(subreddit:str, respData: dict, adj:str, diskData:dict, posit
                         # record post ID where commented, so as not to coment again in that post to reduce spam
                         postsWhereiAlreadyCommentedStr += f" {postID}"
                     except Exception as e: # if public comment fails for some reason, DM
-                        myLogger.info(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentName}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}. DM'ing u/{author}")
-                        sendTgMessage(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentName}, Sub: {subreddit}. Is this a banned sub? See if error is specific to banned sub. Anyway, sending DM to {author}. Error is: {e}. DM'ing u/{author}")
+                        myLogger.info(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentName}, Sub: {subreddit}. Banned sub mostly. Anyway, sending DM to {author}. Error is: {e}. DM'ing u/{author}")
+                        # sendTgMessage(f"ModRankBot Couldn't comment publicly. Commenter: {author} , ParentMod: {parentName}, Sub: {subreddit}. Banned sub mostly. Anyway, sending DM to {author}. Error is: {e}. DM'ing u/{author}")
                         try:
                             commentAuthorObj = REDDIT_OBJ.redditor(author)
                             commentAuthorObj.message(subject=f"Thanks for voting on u/{parentName} in r/{subreddit}", message=f"[Your vote]({commentURL}) has been successfully recorded. Reply '!OptOut' to stop replying.\n\n*Check out the [rankings table](https://modrank.netlify.app/).*")

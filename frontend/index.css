@@ -31,6 +31,10 @@ table {
 table th {
     font-size: 1.2em;
     border-right: 3px solid #575757; /* delimiting headers since I'm squishing them. Squishing is correct since anyway data is teeny */
+    position: -webkit-sticky; /* this is for all Safari (Desktop & iOS), not for Chrome*/
+    position: sticky;
+    top: 0;
+    background: #000; /* any bg-color to overlap */
 }
 
 td {
@@ -49,11 +53,4 @@ table th:hover {
 
 input[type=checkbox] {
     transform: scale(2.5);
-}
-
-table th {
-    position: -webkit-sticky; /* this is for all Safari (Desktop & iOS), not for Chrome*/
-    position: sticky;
-    top: 0;
-    background: #000; /* any bg-color to overlap */
 }
